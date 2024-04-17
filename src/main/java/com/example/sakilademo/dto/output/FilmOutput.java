@@ -1,6 +1,7 @@
 package com.example.sakilademo.dto.output;
 
 import com.example.sakilademo.entities.Film;
+import com.example.sakilademo.entities.FilmRating;
 import com.example.sakilademo.entities.Language;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class FilmOutput {
     private String movieTitle;
     //Decouple in the future. Language output class.
     private Year releaseYear;
+    private FilmRating rating;
     private Language languageID;
 //    private String languageID;
     private List<CategoryReferenceOutput> categories;
@@ -32,6 +34,7 @@ public class FilmOutput {
                 film.getRentalRate(),
                 film.getMovieTitle(),
                 film.getReleaseYear(),
+                film.getRating(),
                 film.getLanguage(),
                 film.getCategories()
                         .stream()

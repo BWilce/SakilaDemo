@@ -4,13 +4,21 @@ import com.example.sakilademo.dto.input.ActorInput;
 import com.example.sakilademo.dto.input.ValidationGroup;
 import com.example.sakilademo.dto.output.ActorOutput;
 import com.example.sakilademo.entities.Actor;
+import com.example.sakilademo.entities.Film;
 import com.example.sakilademo.repositories.ActorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,14 +31,16 @@ public class ActorController {
 
     @Autowired
     private ActorRepository actorRepository;
+    @Autowired
+    private PagedResourcesAssembler<Actor> pagedResourcesAssembler;
     @GetMapping
-    public List<ActorOutput> readAll(){
+    public PagedModel<EntityModel<ActorOutput>> readAll(@RequestParam(defaultValue = "0")int page,
+                                                        @RequestParam(defaultValue = "2")int size){
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Actor> actorPage = actorRepository.findAll(pageable);
         // Don't need to use a variable.
-        final var actors = actorRepository.findAll();
-        return actors
-                .stream()
-                .map(ActorOutput::from)
-                .collect(Collectors.toList());
+        return pagedResourcesAssembler.toModel(
+                actorPage, actor -> EntityModel.of(ActorOutput.from(actor)));
     }
     @GetMapping("/{id}")
     public ActorOutput readByID(@PathVariable Short id){

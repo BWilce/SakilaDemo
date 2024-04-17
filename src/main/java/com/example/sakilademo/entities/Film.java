@@ -1,5 +1,6 @@
 package com.example.sakilademo.entities;
 
+import com.example.sakilademo.converter.String2Enum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -7,9 +8,7 @@ import org.hibernate.annotations.Generated;
 
 import java.math.BigDecimal;
 import java.time.Year;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @Entity
 @Table(name = "film")
@@ -30,6 +29,9 @@ public class Film {
     private String movieTitle;
     @Column(name = "release_year")
     private Year releaseYear;
+    @Column(name = "rating")
+    @Convert(converter = String2Enum.class)
+    private FilmRating rating;
     @ManyToOne
     @JoinColumn(name = "language_id")
     private Language language;
@@ -43,7 +45,7 @@ public class Film {
 //        inverseJoinColumns = {@JoinColumn(name="actor_id")}
 //)
 private List<Actor> cast = new ArrayList<>();
-    @ManyToMany
+    @ManyToMany()
     @JoinTable(
             name = "film_category",
             joinColumns = {@JoinColumn(name ="film_id")},

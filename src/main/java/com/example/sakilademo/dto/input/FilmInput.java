@@ -18,6 +18,8 @@ public class FilmInput {
     private Year releaseYear;
     @NotNull(groups = {Create.class})
     private Byte languageID;
+    @NotNull(groups = {Create.class})
+    private String rating;
 //    @NotNull(groups = {Create.class})
 //    private BigDecimal rentalRate;
 }
