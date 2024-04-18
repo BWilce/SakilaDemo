@@ -8,6 +8,10 @@ import com.example.sakilademo.entities.Actor;
 import com.example.sakilademo.entities.Film;
 import com.example.sakilademo.entities.FilmRating;
 import com.example.sakilademo.entities.Language;
+import com.example.sakilademo.handler.CustomException;
+import com.example.sakilademo.handler.LanguageIDError;
+import com.example.sakilademo.handler.RatingError;
+import com.example.sakilademo.handler.SpecificIDError;
 import com.example.sakilademo.repositories.LanguageRepository;
 import com.example.sakilademo.repositories.FilmRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,14 +24,12 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.util.UriComponentsBuilder;
 
-//import com.example.sakilademo.wrapper.Pagination;
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.example.sakilademo.dto.input.ValidationGroup.Create;
@@ -70,26 +72,26 @@ public class FilmController {
     public FilmOutput readByID(@PathVariable Short id) {
         return filmRepository.findById(id)
                 .map(FilmOutput::from)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        String.format("No such film with id %d.", id)
-                ));
+                .orElseThrow(() -> new SpecificIDError(id, HttpStatus.NOT_FOUND));
     }
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
     public FilmOutput create(@Validated(Create.class)
                              @RequestBody FilmInput data) {
-        FilmRating rating = FilmRating.ratingData(data.getRating());
+        FilmRating rating;
+        try{
+        rating = FilmRating.ratingData(data.getRating());
+        } catch(IllegalArgumentException ex){
+            throw new RatingError(data.getRating(), HttpStatus.BAD_REQUEST);
+        }
         Language language = languageRepository.findById(data.getLanguageID())
-                .orElseThrow(()-> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,"Language not found"));
+                .orElseThrow(()-> new LanguageIDError(data.getLanguageID(), HttpStatus.BAD_REQUEST));
         final var film = new Film();
         film.setMovieTitle(data.getMovieTitle());
         film.setReleaseYear(data.getReleaseYear());
         film.setLanguage(language);
         film.setRating(rating);
-//        film.setRentalRate(data.getRentalRate() != null ? data.getRentalRate() : BigDecimal.valueOf(4.99));
         return FilmOutput.from(filmRepository
                 .save(film));
     }
@@ -99,11 +101,8 @@ public class FilmController {
                              @Validated(Update.class)
                              @RequestBody FilmInput data){
         Language language = languageRepository.findById(data.getLanguageID())
-                .orElseThrow(()-> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,"Language not found"));
-        Film film = filmRepository.findById(id).orElseThrow(()-> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "No such film with id "+id));
+                .orElseThrow(()-> new SpecificIDError(id, HttpStatus.NOT_FOUND));
+        Film film = filmRepository.findById(id).orElseThrow(()-> new SpecificIDError(id, HttpStatus.NOT_FOUND));
         if (data.getMovieTitle() != null){
             film.setMovieTitle(data.getMovieTitle());
         }
@@ -120,18 +119,15 @@ public class FilmController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Short id){
         Film film = filmRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No such film with id " + id));
+                .orElseThrow(() -> new SpecificIDError(id, HttpStatus.NOT_FOUND));
     filmRepository.delete(film);
 }
-//private String generatePageLink(int page, int size, int totalPages, String baseURL){
-//        if (page < 0 || page >= totalPages) return null;
-//
-//        return UriComponentsBuilder.fromUriString(baseURL)
-//                .queryParam("page",page)
-//                .queryParam("size",size)
-//                .build()
-//                .toUriString();
-//}
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<String> handleCustomException(CustomException ex){
+        HttpStatus httpStatus = ex.getHttpStatus();
+        return ResponseEntity.status(httpStatus)
+                .body(ex.getMessage()+" ("+
+                        httpStatus.value()+
+                        " "+
+                        httpStatus.getReasonPhrase()+")");}
 }

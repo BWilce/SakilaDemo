@@ -5,6 +5,8 @@ import com.example.sakilademo.dto.input.ValidationGroup;
 import com.example.sakilademo.dto.output.ActorOutput;
 import com.example.sakilademo.entities.Actor;
 import com.example.sakilademo.entities.Film;
+import com.example.sakilademo.handler.CustomException;
+import com.example.sakilademo.handler.SpecificIDError;
 import com.example.sakilademo.repositories.ActorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
@@ -14,6 +16,7 @@ import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,10 +49,7 @@ public class ActorController {
     public ActorOutput readByID(@PathVariable Short id){
         return actorRepository.findById(id)
                 .map(ActorOutput::from)
-        .orElseThrow(()-> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                String.format("No such actor with id %d.", id)
-                ));
+        .orElseThrow(()-> new SpecificIDError(id, HttpStatus.NOT_FOUND));
     }
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -64,9 +64,7 @@ public class ActorController {
     @ResponseStatus(HttpStatus.OK)
     public ActorOutput update(@PathVariable Short id,@Validated(Update.class) @RequestBody ActorInput data){
         Actor actor = actorRepository.findById(id)
-                .orElseThrow(()-> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No such actor with id "+id));
+                .orElseThrow(()-> new SpecificIDError(id, HttpStatus.NOT_FOUND));
         if (data.getFirstName() != null){
             actor.setFirstName(data.getFirstName());
         }
@@ -85,9 +83,15 @@ public class ActorController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Short id){
         Actor actor = actorRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "No such actor with id " + id));
+                .orElseThrow(() -> new SpecificIDError(id, HttpStatus.NOT_FOUND));
         actorRepository.delete(actor);
     }
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<String> handleCustomException(CustomException ex){
+        HttpStatus httpStatus = ex.getHttpStatus();
+        return ResponseEntity.status(httpStatus)
+                .body(ex.getMessage()+" ("+
+                        httpStatus.value()+
+                        " "+
+                        httpStatus.getReasonPhrase()+")");}
 }
