@@ -86,6 +86,8 @@ public class ActorController {
                 .orElseThrow(() -> new SpecificIDError(id, HttpStatus.NOT_FOUND));
         actorRepository.delete(actor);
     }
+//Here, depending on the error, we will throw a specific error message for each error
+//which occurs. The ResponseEntity is what we return to the client.
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<String> handleCustomException(CustomException ex){
         HttpStatus httpStatus = ex.getHttpStatus();
