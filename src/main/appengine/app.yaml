@@ -1,2 +1,7 @@
 runtime: java21
 instance_class: F1
+env_variables:
+  MYSQL_CONN_NAME: 'sakila-database-423308:europe-west2:sakila-demo'
+  MYSQL_DB_NAME: 'sakila'
+  MYSQL_USERNAME: 'root'
+  MYSQL_PASSWORD: 'root'
